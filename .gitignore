@@ -1,0 +1,27 @@
+# cursor
+.cursor/*
+/.cursor/*
+
+# docs
+.docs/*
+/.docs/* 
+
+# node_modules
+node_modules/*
+/node_modules/*
+
+# vscode
+.vscode/*
+/.vscode/*
+
+# .env
+.env
+/.env
+
+# .env.local
+.env.local
+/.env.local
+
+# .env.development.local
+.env.development.local
+/.env.development.local
