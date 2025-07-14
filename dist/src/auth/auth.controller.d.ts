@@ -5,7 +5,19 @@ export declare class AuthController {
     constructor(authService: AuthService);
     login(req: {
         user: Omit<User, 'password'>;
-    }): Promise<{
+    }): {
         access_token: string;
-    }>;
+    };
+    googleAuth(): void;
+    googleAuthRedirect(req: {
+        user: Omit<User, 'password'>;
+    }): {
+        access_token: string;
+    };
+    kakaoAuth(): void;
+    kakaoAuthRedirect(req: {
+        user: Omit<User, 'password'>;
+    }): {
+        access_token: string;
+    };
 }

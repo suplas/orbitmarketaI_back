@@ -26,11 +26,25 @@ let AuthService = class AuthService {
     }
     async validateUser(email, pass) {
         const user = await this.usersService.findByEmail(email);
-        if (user && (await bcrypt.compare(pass, user.password))) {
+        if (user && user.password && (await bcrypt.compare(pass, user.password))) {
             const { password, ...result } = user;
             return result;
         }
         return null;
+    }
+    async validateSocialUser(data) {
+        let user = await this.usersService.findByPlatformAndSnsId(data.platform, data.snsId);
+        if (user) {
+            return user;
+        }
+        user = await this.usersService.create({
+            email: data.email,
+            name: data.displayName,
+            platform: data.platform,
+            snsId: data.snsId,
+            profileImage: data.profileImage,
+        });
+        return user;
     }
     login(user) {
         const payload = { email: user.email, sub: user.id, role: user.role };

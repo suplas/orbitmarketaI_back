@@ -18,12 +18,23 @@ const swagger_1 = require("@nestjs/swagger");
 const auth_service_1 = require("./auth.service");
 const local_auth_guard_1 = require("./local-auth.guard");
 const login_dto_1 = require("./dto/login.dto");
+const passport_1 = require("@nestjs/passport");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
         this.authService = authService;
     }
-    async login(req) {
+    login(req) {
+        return this.authService.login(req.user);
+    }
+    googleAuth() {
+    }
+    googleAuthRedirect(req) {
+        return this.authService.login(req.user);
+    }
+    kakaoAuth() {
+    }
+    kakaoAuthRedirect(req) {
         return this.authService.login(req.user);
     }
 };
@@ -36,8 +47,42 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Get)('google'),
+    (0, swagger_1.ApiOperation)({ summary: 'Google 소셜 로그인 시작' }),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "googleAuth", null);
+__decorate([
+    (0, common_1.Get)('google/callback'),
+    (0, swagger_1.ApiOperation)({ summary: 'Google 소셜 로그인 콜백' }),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "googleAuthRedirect", null);
+__decorate([
+    (0, common_1.Get)('kakao'),
+    (0, swagger_1.ApiOperation)({ summary: 'Kakao 소셜 로그인 시작' }),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('kakao')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "kakaoAuth", null);
+__decorate([
+    (0, common_1.Get)('kakao/callback'),
+    (0, swagger_1.ApiOperation)({ summary: 'Kakao 소셜 로그인 콜백' }),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('kakao')),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "kakaoAuthRedirect", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('인증'),
     (0, common_1.Controller)('auth'),
