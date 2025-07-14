@@ -1,41 +1,169 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PromoteDto } from './dto/promote.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { TrackingUrlDto } from './dto/tracking-url.dto';
+import { ProductListItemDto } from './dto/product-list-item.dto';
+import { ProductDetailDto } from './dto/product-detail.dto';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { TrackEventDto } from './dto/track-event.dto';
+import { StatsDto } from './dto/stats.dto';
 
 @Injectable()
 export class MarketingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProducts(search?: string, category?: string, sort?: string) {
-    // TODO: Implement search, category, sort logic
-    console.log({ search, category, sort });
-    return await this.prisma.product.findMany();
-  }
+  async getProducts(
+    search?: string,
+    category?: string,
+    sort?: string,
+  ): Promise<ProductListItemDto[]> {
+    const where: Prisma.ProductWhereInput = {
+      status: ProductStatus.active,
+    };
+    if (search) {
+      where.name = { contains: search };
+    }
+    if (category) {
+      where.category = { equals: category };
+    }
 
-  async getProductById(productId: number) {
-    return await this.prisma.product.findUnique({
-      where: { id: productId },
+    const orderBy: Prisma.ProductOrderByWithRelationInput = {};
+    if (sort === 'reward') {
+      orderBy.reward = 'desc';
+    } else {
+      orderBy.createdAt = 'desc'; // Default sort
+    }
+
+    const products = await this.prisma.product.findMany({
+      where,
+      orderBy,
+      include: {
+        _count: {
+          select: { promotions: true },
+        },
+      },
     });
+
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      reward: p.reward,
+      rewardRate: p.rewardRate,
+      promoterCount: p._count.promotions,
+      imageUrl: p.imageUrl,
+    }));
   }
 
-  createTrackingLink(promoteDto: PromoteDto) {
-    console.log(promoteDto);
-    // TODO: Implement tracking link creation logic with new models
+  async getProductById(id: number): Promise<ProductDetailDto> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: id, status: ProductStatus.active },
+      include: {
+        seller: true, // 'seller' relation must be defined in schema
+      },
+    });
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
     return {
-      trackingUrl: 'https://myservice.com/t/8f3e9c1d',
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      reward: product.reward,
+      rewardRate: product.rewardRate,
+      sellerName: product.seller.name,
+      imageUrl: product.imageUrl,
+      category: product.category,
     };
   }
 
-  trackEvent(trackEventDto: TrackEventDto) {
-    console.log(trackEventDto);
-    // TODO: Implement event tracking logic with new models
+  async startPromotion(
+    productId: number,
+    userId: number,
+  ): Promise<TrackingUrlDto> {
+    const trackingId = uuidv4();
+
+    await this.prisma.promotion.create({
+      data: {
+        productId: productId,
+        userId: userId,
+        trackingId: trackingId,
+      },
+    });
+
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const trackingUrl = `${baseUrl}/t/${trackingId}`;
+
+    return { trackingUrl };
+  }
+
+  async trackEvent(trackEventDto: TrackEventDto): Promise<{ success: boolean }> {
+    const { trackingId, eventType, userInfo, extra } = trackEventDto;
+
+    const promotion = await this.prisma.promotion.findUnique({
+      where: { trackingId: trackingId },
+    });
+
+    if (!promotion) {
+      throw new NotFoundException(
+        `Promotion with tracking ID ${trackingId} not found`,
+      );
+    }
+
+    await this.prisma.promotionEvent.create({
+      data: {
+        promotionId: promotion.id,
+        eventType: eventType,
+        ipAddress: userInfo.ip,
+        userAgent: userInfo.userAgent,
+        referrer: userInfo.referer,
+        etcData: extra || {},
+      },
+    });
+
     return { success: true };
   }
 
-  getStats(userId: number) {
-    console.log({ userId });
-    // TODO: Implement stats logic with new models
-    return [];
+  async getStats(userId: number): Promise<StatsDto[]> {
+    const promotions = await this.prisma.promotion.findMany({
+      where: { userId: userId },
+      include: {
+        product: true,
+        _count: {
+          select: {
+            events: {
+              where: { eventType: 'click' },
+            },
+          },
+        },
+      },
+    });
+
+    const purchaseCounts = await this.prisma.promotionEvent.groupBy({
+      by: ['promotionId'],
+      where: {
+        promotion: { userId: userId },
+        eventType: 'purchase',
+      },
+      _count: true,
+    });
+
+    const purchaseMap = new Map(
+      purchaseCounts.map((p) => [p.promotionId, p._count]),
+    );
+
+    return promotions.map((p) => {
+      const purchases = purchaseMap.get(p.id) || 0;
+      const expectedReward = (p.product.reward || 0) * purchases;
+
+      return {
+        productId: p.productId,
+        productName: p.product.name,
+        clicks: p._count.events,
+        purchases: purchases,
+        expectedReward: expectedReward,
+      };
+    });
   }
 }

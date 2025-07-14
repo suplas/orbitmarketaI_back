@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+/// This is your Prisma schema file,
+/// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -13,22 +10,183 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Enums based on DBERP.md
+enum Role {
+  promoter
+  admin
+  seller
 }
 
+enum AccountStatus {
+  active
+  inactive
+}
+
+enum ProductStatus {
+  active
+  inactive
+  pending
+}
+
+enum PromotionStatus {
+  active
+  expired
+  banned
+}
+
+enum EventType {
+  click
+  purchase
+  video_complete
+}
+
+enum CouponStatus {
+  active
+  used
+  expired
+}
+
+
+/// 사용자(홍보자, 관리자, 판매자, SNS/플랫폼 통합) 테이블
+model User {
+  /// 유저 고유번호
+  id        Int      @id @default(autoincrement()) @map("id")
+  /// 이메일(로그인 ID, 소셜일 경우 provider_email로도 사용)
+  email     String   @unique @map("email")
+  /// 비밀번호(암호화 저장, 소셜 로그인은 NULL 가능)
+  password  String?  @map("password")
+  /// 이름/닉네임
+  name      String?  @map("name")
+  /// 역할(홍보자/관리자/판매자)
+  role      Role     @default(promoter) @map("role")
+  /// 계정상태(활성/비활성)
+  status    AccountStatus @default(active) @map("status")
+  /// 가입 플랫폼(local, google, kakao, naver 등)
+  platform  String   @default("local") @map("platform") @db.VarChar(32)
+  /// SNS 고유식별자(구글/카카오 등 provider에서 발급받는 id)
+  snsId     String?  @map("sns_id") @db.VarChar(128)
+  /// 프로필 이미지 URL
+  profileImage String? @map("profile_image") @db.VarChar(512)
+  /// 소셜 계정의 이메일(일반 email과 다를 수 있음)
+  providerEmail String? @map("provider_email")
+  /// SNS 리프레시 토큰(필요시, 암호화 보관 권장)
+  refreshToken String? @map("refresh_token") @db.VarChar(512)
+  /// 생성일시
+  createdAt DateTime @default(now()) @map("created_at")
+  /// 수정일시
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  products   Product[]
+  promotions Promotion[]
+  coupons    Coupon[]
+
+  @@map("users")
+  @@unique([platform, snsId], name: "uniq_platform_snsid")
+}
+
+/// 홍보 상품 테이블
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String   @db.Text
-  price       Int
-  seller      String
-  imageUrl    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  /// 상품 고유번호
+  id          Int      @id @default(autoincrement()) @map("id")
+  /// 상품명
+  name        String   @map("name")
+  /// 상품 설명
+  description String?  @db.Text @map("description")
+  /// 카테고리
+  category    String?  @map("category")
+  /// 상품 이미지 URL
+  imageUrl    String?  @map("image_url") @db.VarChar(512)
+  /// 상품 가격(원)
+  price       Int?     @map("price")
+  /// 홍보 리워드(원)
+  reward      Int?     @map("reward")
+  /// 리워드 지급률(%)
+  rewardRate  Int?     @map("reward_rate")
+  /// 상품상태
+  status      ProductStatus @default(active) @map("status")
+  /// 생성일시
+  createdAt   DateTime @default(now()) @map("created_at")
+  /// 수정일시
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  seller    User     @relation(fields: [sellerId], references: [id])
+  /// 판매자 유저번호
+  sellerId  Int      @map("seller_id")
+  
+  promotions Promotion[]
+  coupons    Coupon[]
+
+  @@map("products")
+}
+
+/// 홍보자별 홍보내역/트래킹 테이블
+model Promotion {
+  /// 홍보내역 고유번호
+  id          Int      @id @default(autoincrement()) @map("id")
+  /// 트래킹 링크(난수/UUID)
+  trackingId  String   @unique @map("tracking_id") @db.Char(36)
+  /// 홍보 채널 타입(예: blog, youtube 등)
+  channelType String?  @map("channel_type")
+  /// 홍보 상태
+  status      PromotionStatus @default(active) @map("status")
+  /// 생성일시
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+  /// 홍보자 유저번호
+  userId    Int      @map("user_id")
+  product   Product  @relation(fields: [productId], references: [id])
+  /// 상품 고유번호
+  productId Int      @map("product_id")
+  
+  events    PromotionEvent[]
+
+  @@map("promotions")
+}
+
+/// 트래킹 이벤트(클릭/구매 등) 로그 테이블
+model PromotionEvent {
+  /// 이벤트 고유번호
+  id          Int       @id @default(autoincrement()) @map("id")
+  /// 이벤트 타입(클릭/구매/영상완료)
+  eventType   EventType? @map("event_type")
+  /// 이벤트 발생 시각
+  eventTime   DateTime  @default(now()) @map("event_time")
+  /// 클릭/구매 IP주소
+  ipAddress   String?   @map("ip_address") @db.VarChar(45)
+  /// 사용자 브라우저 정보
+  userAgent   String?   @map("user_agent")
+  /// 유입 경로(레퍼러)
+  referrer    String?   @map("referrer") @db.VarChar(512)
+  /// 기타 추가 정보(JSON)
+  etcData     Json?     @map("etc_data")
+
+  promotion   Promotion @relation(fields: [promotionId], references: [id])
+  /// 홍보내역 고유번호
+  promotionId Int       @map("promotion_id")
+
+  @@map("promotion_events")
+}
+
+/// 쿠폰/결제/리워드 관리 테이블
+model Coupon {
+  /// 쿠폰 고유번호
+  id          Int       @id @default(autoincrement()) @map("id")
+  /// 쿠폰코드(문자열)
+  couponCode  String?   @unique @map("coupon_code") @db.VarChar(64)
+  /// 쿠폰 상태
+  status      CouponStatus @default(active) @map("status")
+  /// 생성일시
+  createdAt   DateTime  @default(now()) @map("created_at")
+  /// 쿠폰 만료일시
+  expiredAt   DateTime? @map("expired_at")
+
+  seller    User      @relation(fields: [sellerId], references: [id])
+  /// 판매자 유저번호
+  sellerId  Int       @map("seller_id")
+  product   Product   @relation(fields: [productId], references: [id])
+  /// 상품 고유번호
+  productId Int       @map("product_id")
+
+  @@map("coupons")
 }
