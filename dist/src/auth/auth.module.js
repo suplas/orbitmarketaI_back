@@ -18,6 +18,7 @@ const local_strategy_1 = require("./local.strategy");
 const config_1 = require("@nestjs/config");
 const google_strategy_1 = require("./strategies/google.strategy");
 const kakao_strategy_1 = require("./strategies/kakao.strategy");
+const naver_strategy_1 = require("./strategies/naver.strategy");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -44,6 +45,7 @@ exports.AuthModule = AuthModule = __decorate([
             local_strategy_1.LocalStrategy,
             google_strategy_1.GoogleStrategy,
             kakao_strategy_1.KakaoStrategy,
+            naver_strategy_1.NaverStrategy,
         ],
     })
 ], AuthModule);

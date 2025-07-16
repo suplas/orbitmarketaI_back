@@ -7,10 +7,14 @@ import { ProductDetailDto } from './dto/product-detail.dto';
 import { Prisma, ProductStatus } from '@prisma/client';
 import { TrackEventDto } from './dto/track-event.dto';
 import { StatsDto } from './dto/stats.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MarketingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getProducts(
     search?: string,
@@ -92,7 +96,7 @@ export class MarketingService {
       },
     });
 
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = this.configService.getOrThrow<string>('BASE_URL');
     const trackingUrl = `${baseUrl}/t/${trackingId}`;
 
     return { trackingUrl };

@@ -57,6 +57,8 @@ model User {
   password  String?  @map("password")
   /// 이름/닉네임
   name      String?  @map("name")
+  /// 연락처
+  phoneNumber String? @map("phone_number") @db.VarChar(20)
   /// 역할(홍보자/관리자/판매자)
   role      Role     @default(promoter) @map("role")
   /// 계정상태(활성/비활성)

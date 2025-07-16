@@ -1,8 +1,12 @@
 import { AuthService } from './auth.service';
 import { User } from '@prisma/client';
+import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 export declare class AuthController {
     private readonly authService;
-    constructor(authService: AuthService);
+    private readonly configService;
+    constructor(authService: AuthService, configService: ConfigService);
+    private socialLoginRedirect;
     login(req: {
         user: Omit<User, 'password'>;
     }): {
@@ -11,13 +15,13 @@ export declare class AuthController {
     googleAuth(): void;
     googleAuthRedirect(req: {
         user: Omit<User, 'password'>;
-    }): {
-        access_token: string;
-    };
+    }, res: Response): void;
     kakaoAuth(): void;
     kakaoAuthRedirect(req: {
         user: Omit<User, 'password'>;
-    }): {
-        access_token: string;
-    };
+    }, res: Response): void;
+    naverAuth(): void;
+    naverAuthRedirect(req: {
+        user: Omit<User, 'password'>;
+    }, res: Response): void;
 }

@@ -13,6 +13,10 @@ export class CreateUserDto {
   @IsOptional()
   name?: string;
 
+  @IsString()
+  @IsOptional()
+  phoneNumber?: string | null;
+
   @IsEnum(Role)
   @IsOptional()
   role?: Role;

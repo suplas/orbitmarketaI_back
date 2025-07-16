@@ -9,6 +9,7 @@ import { LocalStrategy } from './local.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { KakaoStrategy } from './strategies/kakao.strategy';
+import { NaverStrategy } from './strategies/naver.strategy';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { KakaoStrategy } from './strategies/kakao.strategy';
     LocalStrategy,
     GoogleStrategy,
     KakaoStrategy,
+    NaverStrategy,
   ],
 })
 export class AuthModule {}

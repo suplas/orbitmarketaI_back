@@ -19,23 +19,36 @@ const auth_service_1 = require("./auth.service");
 const local_auth_guard_1 = require("./local-auth.guard");
 const login_dto_1 = require("./dto/login.dto");
 const passport_1 = require("@nestjs/passport");
+const config_1 = require("@nestjs/config");
 let AuthController = class AuthController {
     authService;
-    constructor(authService) {
+    configService;
+    constructor(authService, configService) {
         this.authService = authService;
+        this.configService = configService;
+    }
+    socialLoginRedirect(user, res) {
+        const { access_token } = this.authService.login(user);
+        const frontendUrl = this.configService.getOrThrow('FRONTEND_URL');
+        res.redirect(`${frontendUrl}/#access_token=${access_token}`);
     }
     login(req) {
         return this.authService.login(req.user);
     }
     googleAuth() {
     }
-    googleAuthRedirect(req) {
-        return this.authService.login(req.user);
+    googleAuthRedirect(req, res) {
+        return this.socialLoginRedirect(req.user, res);
     }
     kakaoAuth() {
     }
-    kakaoAuthRedirect(req) {
-        return this.authService.login(req.user);
+    kakaoAuthRedirect(req, res) {
+        return this.socialLoginRedirect(req.user, res);
+    }
+    naverAuth() {
+    }
+    naverAuthRedirect(req, res) {
+        return this.socialLoginRedirect(req.user, res);
     }
 };
 exports.AuthController = AuthController;
@@ -62,8 +75,9 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Google 소셜 로그인 콜백' }),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
     __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "googleAuthRedirect", null);
 __decorate([
@@ -79,13 +93,33 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Kakao 소셜 로그인 콜백' }),
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('kakao')),
     __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "kakaoAuthRedirect", null);
+__decorate([
+    (0, common_1.Get)('naver'),
+    (0, swagger_1.ApiOperation)({ summary: 'Naver 소셜 로그인 시작' }),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('naver')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "naverAuth", null);
+__decorate([
+    (0, common_1.Get)('naver/callback'),
+    (0, swagger_1.ApiOperation)({ summary: 'Naver 소셜 로그인 콜백' }),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('naver')),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "naverAuthRedirect", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('인증'),
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [auth_service_1.AuthService])
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        config_1.ConfigService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

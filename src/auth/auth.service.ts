@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
     displayName: string;
     snsId: string;
     platform: string;
+    phoneNumber?: string | null;
     profileImage?: string | null;
   }) {
     let user = await this.usersService.findByPlatformAndSnsId(
@@ -45,6 +47,7 @@ export class AuthService {
       name: data.displayName,
       platform: data.platform,
       snsId: data.snsId,
+      phoneNumber: data.phoneNumber,
       profileImage: data.profileImage,
       // 소셜 로그인이므로 password는 null
     });
@@ -52,7 +55,7 @@ export class AuthService {
     return user;
   }
 
-  login(user: any) {
+  login(user: Omit<User, 'password'>) {
     const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),

@@ -19,6 +19,8 @@ interface IKakaoProfile {
     is_email_valid?: boolean;
     is_email_verified?: boolean;
     email?: string;
+    phone_number_needs_agreement?: boolean;
+    phone_number?: string;
   };
 }
 
@@ -44,6 +46,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     const username = profile.username;
     const kakaoProfile = profile._json as IKakaoProfile;
     const email = kakaoProfile.kakao_account?.email;
+    const phoneNumber = kakaoProfile.kakao_account?.phone_number;
 
     if (!email) {
       return done(
@@ -57,6 +60,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
       displayName: username || email.split('@')[0],
       snsId: id.toString(),
       platform: 'kakao',
+      phoneNumber: phoneNumber || null,
       profileImage:
         kakaoProfile.kakao_account?.profile?.profile_image_url || null,
     });

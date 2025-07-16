@@ -14,10 +14,13 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const uuid_1 = require("uuid");
 const client_1 = require("@prisma/client");
+const config_1 = require("@nestjs/config");
 let MarketingService = class MarketingService {
     prisma;
-    constructor(prisma) {
+    configService;
+    constructor(prisma, configService) {
         this.prisma = prisma;
+        this.configService = configService;
     }
     async getProducts(search, category, sort) {
         const where = {
@@ -86,7 +89,7 @@ let MarketingService = class MarketingService {
                 trackingId: trackingId,
             },
         });
-        const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+        const baseUrl = this.configService.getOrThrow('BASE_URL');
         const trackingUrl = `${baseUrl}/t/${trackingId}`;
         return { trackingUrl };
     }
@@ -149,6 +152,7 @@ let MarketingService = class MarketingService {
 exports.MarketingService = MarketingService;
 exports.MarketingService = MarketingService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        config_1.ConfigService])
 ], MarketingService);
 //# sourceMappingURL=marketing.service.js.map

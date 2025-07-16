@@ -4,9 +4,11 @@ import { ProductListItemDto } from './dto/product-list-item.dto';
 import { ProductDetailDto } from './dto/product-detail.dto';
 import { TrackEventDto } from './dto/track-event.dto';
 import { StatsDto } from './dto/stats.dto';
+import { ConfigService } from '@nestjs/config';
 export declare class MarketingService {
     private readonly prisma;
-    constructor(prisma: PrismaService);
+    private readonly configService;
+    constructor(prisma: PrismaService, configService: ConfigService);
     getProducts(search?: string, category?: string, sort?: string): Promise<ProductListItemDto[]>;
     getProductById(id: number): Promise<ProductDetailDto>;
     startPromotion(productId: number, userId: number): Promise<TrackingUrlDto>;
