@@ -26,3 +26,11 @@ node_modules/*
 .env.development.local
 /.env.development.local
 /generated/prisma
+
+#dist
+dist/*
+/dist/*
+
+# .DS_Store
+.DS_Store
+/.DS_Store
